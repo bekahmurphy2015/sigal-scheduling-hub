@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sigal's Scheduling Hub</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto+Serif:wght@400;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Roboto Serif', serif;
+            background-color: #F5F5DC; /* Cream background */
+            color: #2F4F2F; /* Dark green text */
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+        
+        .terminal-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: visible;
+            height: auto;
+            min-height: auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 3px solid #2F4F2F;
+            padding-bottom: 20px;
+        }
+        
+        .title {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #2F4F2F;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+        
+        .datetime {
+            font-size: 1.2rem;
+            color: #8B4513; /* Rusty brown */
+            font-weight: 500;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+        }
+        
+        .section-header {
+            background: #C8A2C8; /* Mauve background */
+            color: #2F4F2F;
+            padding: 15px 20px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            cursor: pointer;
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .section-header:hover {
+            background: #B8A2B8;
+            transform: translateY(-1px);
+        }
+        
+        .collapse-indicator {
+            float: right;
+            transition: transform 0.3s;
+        }
+        
+        .collapsed .collapse-indicator {
+            transform: rotate(180deg);
+        }
+        
+        .collapsible-content {
+            max-height: 400px;
+            overflow-y: auto;
+            overflow-x: auto;
+            transition: max-height 0.3s ease-out;
+        }
+        
+        /* Custom scrollbar styling */
+        .collapsible-content::-webkit-scrollbar {
+            width: 12px;
+        }
+
+        .collapsible-content::-webkit-scrollbar-track {
+            background: #F5F5DC;
+            border-radius: 5px;
+        }
+
+        .collapsible-content::-webkit-scrollbar-thumb {
+            background: #2F4F2F;
+            border-radius: 5px;
+        }
+
+        .collapsible-content::-webkit-scrollbar-thumb:hover {
+            background: #1F3F1F;
+        }
+        
+        .collapsible-content.collapsed {
+            max-height: 0;
+        }
+        
+        .meetings-board {
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+        
+        .meeting-header {
+            background: #E6E6E6;
+            padding: 15px;
+            font-weight: 700;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+            gap: 20px;
+            color: #2F4F2F;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .meeting-row {
+            padding: 15px;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+            gap: 20px;
+            border-bottom: 1px solid #E6E6E6;
+            transition: background-color 0.3s;
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        .meeting-row:hover {
+            background: rgba(47, 79, 47, 0.1);
+        }
+        
+        .meeting-row:nth-child(even) {
+            background: rgba(245, 245, 220, 0.3);
+        }
+        
+        .status {
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 8px 12px;
+            border-radius: 20px;
+            text-align: center;
+            color: white;
+            font-size: 0.9rem;
+        }
+        
+        .status.scheduled {
+            background: #9CAF88; /* Sage green */
+        }
+        
+        .status.in-process {
+            background: #DAA520; /* Mustard yellow */
+            animation: pulse 2s infinite;
+        }
+        
+        .status.unresponsive {
+            background: #B7410E; /* Rust */
+        }
+        
+        .loading {
+            text-align: center;
+            color: #2F4F2F;
+            font-size: 1.2rem;
+            padding: 40px;
+        }
+        
+        .error {
+            text-align: center;
+            color: #B7410E;
+            font-size: 1.2rem;
+            padding: 40px;
+        }
+        
+        .no-meetings {
+            text-align: center;
+            color: #8B4513;
+            font-size: 1.1rem;
+            padding: 30px;
+            font-style: italic;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .refresh-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #2F4F2F;
+            color: #F5F5DC;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .refresh-indicator.show {
+            opacity: 1;
+        }
+        
+        /* View Toggle Button */
+        .view-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        
+        #view-toggle-btn {
+            background: #2F4F2F;
+            color: #F5F5DC;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-family: 'Roboto Serif', serif;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(47, 79, 47, 0.3);
+            transition: all 0.3s;
+        }
+        
+        #view-toggle-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(47, 79, 47, 0.4);
+            background: #1F3F1F;
+        }
+        
+        /* Mobile View Mode */
+        body.mobile-view {
+            max-width: 375px;
+            margin: 0 auto;
+            padding: 10px;
+        }
+        
+        body.mobile-view .terminal-container {
+            padding: 15px;
+            margin: 0;
+        }
+        
+        body.mobile-view .title {
+            font-size: 1.8rem;
+        }
+        
+        body.mobile-view .datetime {
+            font-size: 0.9rem;
+        }
+        
+        body.mobile-view .section-header {
+            font-size: 1.1rem;
+            padding: 12px 15px;
+        }
+        
+        body.mobile-view .meeting-header,
+        body.mobile-view .meeting-row {
+            grid-template-columns: 1fr;
+            gap: 10px;
+            padding: 10px;
+        }
+        
+        body.mobile-view .meeting-header > div,
+        body.mobile-view .meeting-row > div {
+            text-align: center;
+        }
+        
+        body.mobile-view .collapsible-content {
+            max-height: 300px;
+        }
+        
+        @media (max-width: 768px) {
+            .view-toggle {
+                bottom: 10px;
+                right: 10px;
+            }
+            
+            #view-toggle-btn {
+                padding: 8px 15px;
+                font-size: 0.9rem;
+            }
+            
+            .title {
+                font-size: 2rem;
+            }
+            
+            .meeting-header,
+            .meeting-row {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .meeting-header > div,
+            .meeting-row > div {
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="view-toggle">
+        <button onclick="toggleView()" id="view-toggle-btn">
+            Switch to Mobile View
+        </button>
+    </div>
+    
+    <div class="terminal-container">
+        <div class="header">
+            <h1 class="title">SIGAL'S SCHEDULING HUB</h1>
+            <div class="datetime" id="datetime"></div>
+        </div>
+        
+        <div class="section">
+            <div class="section-header" onclick="toggleSection('scheduled')">
+                <span>Scheduled Meetings</span>
+                <span class="collapse-indicator">▼</span>
+            </div>
+            <div class="collapsible-content" id="scheduled-content">
+                <div class="meetings-board">
+                    <div class="meeting-header">
+                        <div>Meeting</div>
+                        <div>Status</div>
+                        <div>Date</div>
+                        <div>Location</div>
+                        <div>Notes</div>
+                    </div>
+                    <div id="scheduled-meetings">
+                        <div class="loading">Loading scheduled meetings...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-header" onclick="toggleSection('in-process')">
+                <span>In Process Meetings</span>
+                <span class="collapse-indicator">▼</span>
+            </div>
+            <div class="collapsible-content" id="in-process-content">
+                <div class="meetings-board">
+                    <div class="meeting-header">
+                        <div>Meeting</div>
+                        <div>Status</div>
+                        <div>Date</div>
+                        <div>Location</div>
+                        <div>Notes</div>
+                    </div>
+                    <div id="in-process-meetings">
+                        <div class="loading">Loading in process meetings...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="refresh-indicator" id="refresh-indicator">
+        Refreshing data...
+    </div>
+
+    <script>
+        // Configuration
+        const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1VNGDqrrBW8FReBzf125j9UKkNbRw6jGJatFkN_VZsyM/export?format=csv';
+        const REFRESH_INTERVAL = 30000; // 30 seconds
+        
+        // Global variables
+        let meetingsData = [];
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDateTime();
+            setInterval(updateDateTime, 1000);
+            
+            loadMeetings();
+            setInterval(loadMeetings, REFRESH_INTERVAL);
+        });
+        
+        function updateDateTime() {
+            const now = new Date();
+            const options = {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            };
+            document.getElementById('datetime').textContent = now.toLocaleDateString('en-US', options);
+        }
+        
+        function showRefreshIndicator() {
+            const indicator = document.getElementById('refresh-indicator');
+            indicator.classList.add('show');
+            setTimeout(() => {
+                indicator.classList.remove('show');
+            }, 2000);
+        }
+        
+        async function loadMeetings() {
+            try {
+                showRefreshIndicator();
+                
+                console.log('Attempting to load from:', SHEET_CSV_URL);
+                
+                const response = await fetch(SHEET_CSV_URL, {
+                    method: 'GET',
+                    mode: 'cors',
+                    cache: 'no-cache'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const csvText = await response.text();
+                console.log('CSV data received, length:', csvText.length);
+                console.log('First 200 characters:', csvText.substring(0, 200));
+                
+                meetingsData = parseCSV(csvText);
+                console.log('Total meetings parsed:', meetingsData.length);
+                
+                displayMeetings();
+                
+            } catch (error) {
+                console.error('Error loading meetings:', error);
+                console.error('Error details:', error.message);
+                document.getElementById('scheduled-meetings').innerHTML = `<div class="error">Error loading meetings: ${error.message}</div>`;
+                document.getElementById('in-process-meetings').innerHTML = `<div class="error">Error loading meetings: ${error.message}</div>`;
+            }
+        }
+        
+        function parseCSV(csvText) {
+            const lines = csvText.trim().split('\n');
+            const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+            
+            console.log('Found these columns in your spreadsheet:', headers);
+            
+            const meetings = [];
+            for (let i = 1; i < lines.length; i++) {
+                const values = parseCSVLine(lines[i]);
+                if (values.length >= headers.length) {
+                    const meeting = {};
+                    headers.forEach((header, index) => {
+                        meeting[header] = values[index] ? values[index].replace(/"/g, '').trim() : '';
+                    });
+                    meetings.push(meeting);
+                }
+            }
+            
+            if (meetings.length > 0) {
+                console.log('First meeting data:', meetings[0]);
+            }
+            
+            return meetings;
+        }
+        
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            
+            result.push(current.trim());
+            return result;
+        }
+        
+        function displayMeetings() {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            console.log('=== DISPLAY MEETINGS DEBUG ===');
+            console.log('Total meetings data:', meetingsData.length);
+            console.log('Today date:', today);
+            
+            const scheduledMeetings = [];
+            const inProcessMeetings = [];
+            
+            meetingsData.forEach((meeting, index) => {
+                const columns = Object.keys(meeting);
+                const dateValue = meeting[columns[2]]; // Date column
+                const statusValue = meeting[columns[1]]; // Status column
+                
+                console.log(`Meeting ${index + 1}: "${meeting[columns[0]]}" - Status: "${statusValue}" - Date: "${dateValue}"`);
+                
+                // Skip meetings that are past due (only if they have a valid date)
+                if (dateValue && dateValue.trim() !== '') {
+                    const meetingDate = parseDate(dateValue);
+                    if (!isNaN(meetingDate) && meetingDate < today) {
+                        console.log(`  -> Skipped (past due): ${meetingDate}`);
+                        return; // Skip past meetings
+                    }
+                }
+                
+                // Determine status and categorize
+                const status = determineStatusFromText(statusValue);
+                
+                if (status.class === 'in-process') {
+                    console.log(`  -> Added to in-process meetings`);
+                    inProcessMeetings.push(meeting);
+                } else {
+                    console.log(`  -> Added to scheduled meetings`);
+                    scheduledMeetings.push(meeting);
+                }
+            });
+            
+            console.log('Scheduled meetings:', scheduledMeetings.length);
+            console.log('In Process meetings:', inProcessMeetings.length);
+            
+            // Sort scheduled meetings by date (earliest first)
+            scheduledMeetings.sort((a, b) => {
+                const columns = Object.keys(a);
+                const dateA = parseDate(a[columns[2]]);
+                const dateB = parseDate(b[columns[2]]);
+                
+                // Handle invalid dates (put them at the end)
+                if (isNaN(dateA) && isNaN(dateB)) return 0;
+                if (isNaN(dateA)) return 1;
+                if (isNaN(dateB)) return -1;
+                
+                return dateA - dateB;
+            });
+            
+            // Sort in-process meetings alphabetically by meeting name
+            inProcessMeetings.sort((a, b) => {
+                const columns = Object.keys(a);
+                const nameA = (a[columns[0]] || '').toLowerCase();
+                const nameB = (b[columns[0]] || '').toLowerCase();
+                return nameA.localeCompare(nameB);
+            });
+            
+            console.log('=== END DEBUG ===');
+            
+            renderMeetings('scheduled-meetings', scheduledMeetings);
+            renderMeetings('in-process-meetings', inProcessMeetings);
+        }
+        
+        function parseDate(dateString) {
+            if (!dateString) return new Date();
+            
+            const date = new Date(dateString);
+            return isNaN(date) ? new Date() : date;
+        }
+        
+        function renderMeetings(containerId, meetings) {
+            const container = document.getElementById(containerId);
+            
+            if (meetings.length === 0) {
+                container.innerHTML = '<div class="no-meetings">No meetings found</div>';
+                return;
+            }
+            
+            console.log(`Rendering ${meetings.length} meetings for ${containerId}`);
+            
+            const html = meetings.map((meeting, index) => {
+                const columns = Object.keys(meeting);
+                
+                const col1 = meeting[columns[0]] || 'N/A'; // Meeting
+                const col2 = meeting[columns[1]] || 'N/A'; // Status  
+                const col3 = meeting[columns[2]] || 'N/A'; // Date
+                const col4 = meeting[columns[3]] || 'N/A'; // Location
+                const col5 = meeting[columns[4]] || 'N/A'; // Notes
+                
+                const status = determineStatusFromText(col2);
+                
+                console.log(`Meeting ${index + 1}: "${col1}" - Status: "${col2}" -> Class: ${status.class}`);
+                
+                const displayDate = formatDate(col3);
+                
+                return `
+                    <div class="meeting-row">
+                        <div>${col1}</div>
+                        <div><span class="status ${status.class}">${status.text}</span></div>
+                        <div>${displayDate}</div>
+                        <div>${col4}</div>
+                        <div>${col5}</div>
+                    </div>
+                `;
+            }).join('');
+            
+            container.innerHTML = html;
+            console.log(`Successfully rendered ${meetings.length} meetings in ${containerId}`);
+        }
+        
+        function determineStatusFromText(statusText) {
+            const status = (statusText || '').toLowerCase().trim();
+            
+            console.log('Checking status:', statusText, '-> normalized:', status);
+            
+            // Check for In Process first
+            if (status.includes('in process') || status.includes('in progress') || status.includes('active') || status.includes('ongoing')) {
+                return { class: 'in-process', text: statusText || 'In Process' };
+            }
+            
+            // Check for Unresponsive
+            if (status.includes('unresponsive') || status.includes('no response') || status.includes('not responding')) {
+                return { class: 'unresponsive', text: statusText || 'Unresponsive' };
+            }
+            
+            // Everything else is treated as Scheduled
+            return { class: 'scheduled', text: statusText || 'Scheduled' };
+        }
+        
+        function formatDate(dateString) {
+            if (!dateString || dateString.trim() === '') return '';
+            
+            const date = parseDate(dateString);
+            if (isNaN(date)) return '';
+            
+            return date.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+            });
+        }
+        
+        function toggleSection(sectionId) {
+            const content = document.getElementById(sectionId + '-content');
+            const header = content.previousElementSibling;
+            
+            content.classList.toggle('collapsed');
+            header.classList.toggle('collapsed');
+        }
+        
+        // Toggle between desktop and mobile view
+        function toggleView() {
+            const body = document.body;
+            const btn = document.getElementById('view-toggle-btn');
+            
+            if (body.classList.contains('mobile-view')) {
+                body.classList.remove('mobile-view');
+                btn.innerHTML = 'Switch to Mobile View';
+            } else {
+                body.classList.add('mobile-view');
+                btn.innerHTML = 'Switch to Desktop View';
+            }
+        }
+    </script>
+</body>
+</html>
