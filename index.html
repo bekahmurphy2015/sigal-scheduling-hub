@@ -546,7 +546,7 @@
             console.log('Scheduled meetings:', scheduledMeetings.length);
             console.log('In Process meetings:', inProcessMeetings.length);
             
-            // Sort scheduled meetings by date (most recent first), then alphabetically by meeting name
+            // Sort scheduled meetings by date (soonest upcoming first), then alphabetically by meeting name
             scheduledMeetings.sort((a, b) => {
                 const columns = Object.keys(a);
                 const dateA = parseDate(a[columns[2]]);
@@ -562,9 +562,9 @@
                 if (isNaN(dateA)) return 1;
                 if (isNaN(dateB)) return -1;
                 
-                // Sort by date (most recent first)
+                // Sort by date (soonest upcoming first)
                 if (dateA.getTime() !== dateB.getTime()) {
-                    return dateB - dateA; // Reverse for most recent first
+                    return dateA - dateB; // Earlier dates first
                 }
                 
                 // If dates are the same, sort alphabetically by meeting name
