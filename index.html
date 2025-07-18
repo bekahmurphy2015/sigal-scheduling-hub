@@ -546,33 +546,36 @@
             console.log('Scheduled meetings:', scheduledMeetings.length);
             console.log('In Process meetings:', inProcessMeetings.length);
             
-            // Sort scheduled meetings by date (earliest first)
+            // Sort scheduled meetings by date (most recent first), then alphabetically by meeting name
             scheduledMeetings.sort((a, b) => {
                 const columns = Object.keys(a);
                 const dateA = parseDate(a[columns[2]]);
                 const dateB = parseDate(b[columns[2]]);
                 
                 // Handle invalid dates (put them at the end)
-                if (isNaN(dateA) && isNaN(dateB)) return 0;
+                if (isNaN(dateA) && isNaN(dateB)) {
+                    // Both have invalid dates, sort alphabetically by meeting name
+                    const nameA = (a[columns[0]] || '').toLowerCase();
+                    const nameB = (b[columns[0]] || '').toLowerCase();
+                    return nameA.localeCompare(nameB);
+                }
                 if (isNaN(dateA)) return 1;
                 if (isNaN(dateB)) return -1;
                 
-                return dateA - dateB;
-            });
-            
-            // Sort in-process meetings by status priority (in-process first, then unresponsive), then alphabetically
-            inProcessMeetings.sort((a, b) => {
-                const columns = Object.keys(a);
-                const statusA = determineStatusFromText(a[columns[1]]);
-                const statusB = determineStatusFromText(b[columns[1]]);
-                
-                // If different status types, in-process comes first
-                if (statusA.class !== statusB.class) {
-                    if (statusA.class === 'in-process') return -1;
-                    if (statusB.class === 'in-process') return 1;
+                // Sort by date (most recent first)
+                if (dateA.getTime() !== dateB.getTime()) {
+                    return dateB - dateA; // Reverse for most recent first
                 }
                 
-                // If same status, sort alphabetically by meeting name
+                // If dates are the same, sort alphabetically by meeting name
+                const nameA = (a[columns[0]] || '').toLowerCase();
+                const nameB = (b[columns[0]] || '').toLowerCase();
+                return nameA.localeCompare(nameB);
+            });
+            
+            // Sort in-process meetings alphabetically by meeting name
+            inProcessMeetings.sort((a, b) => {
+                const columns = Object.keys(a);
                 const nameA = (a[columns[0]] || '').toLowerCase();
                 const nameB = (b[columns[0]] || '').toLowerCase();
                 return nameA.localeCompare(nameB);
