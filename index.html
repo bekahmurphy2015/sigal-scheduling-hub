@@ -534,7 +534,7 @@
                 // Determine status and categorize
                 const status = determineStatusFromText(statusValue);
                 
-                if (status.class === 'in-process') {
+                if (status.class === 'in-process' || status.class === 'unresponsive') {
                     console.log(`  -> Added to in-process meetings`);
                     inProcessMeetings.push(meeting);
                 } else {
@@ -560,9 +560,19 @@
                 return dateA - dateB;
             });
             
-            // Sort in-process meetings alphabetically by meeting name
+            // Sort in-process meetings by status priority (in-process first, then unresponsive), then alphabetically
             inProcessMeetings.sort((a, b) => {
                 const columns = Object.keys(a);
+                const statusA = determineStatusFromText(a[columns[1]]);
+                const statusB = determineStatusFromText(b[columns[1]]);
+                
+                // If different status types, in-process comes first
+                if (statusA.class !== statusB.class) {
+                    if (statusA.class === 'in-process') return -1;
+                    if (statusB.class === 'in-process') return 1;
+                }
+                
+                // If same status, sort alphabetically by meeting name
                 const nameA = (a[columns[0]] || '').toLowerCase();
                 const nameB = (b[columns[0]] || '').toLowerCase();
                 return nameA.localeCompare(nameB);
